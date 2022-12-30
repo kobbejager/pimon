@@ -1,0 +1,38 @@
+# Configuration for Pimon
+
+mqtt:
+    broker: 127.0.0.1
+    port: 1883
+    username: mymqttusername  # Login to broker. Delete if not required
+    password: mymqttpassword  # Login to broker. Delete if not required
+    topic_prefix: rpi-MQTT-monitor
+
+# If this is set to true the script will send just one message containing all values
+group_messages: false
+
+# This is the time  between sending the individual messages
+sleep_time: 0.5
+
+# If this is set, then the script will send MQTT discovery messages meaning a config less setup in HA.  Only works
+# when group_messages is set to false
+discovery_messages: true
+
+# Delay in seconds before measuring the values
+# - this is used for de-synchronizing message if you run this script on many hosts.
+# - if you want a fixed or no delay, set random_delay to false and set a fixed_delay.
+delay:
+    random_delay: true
+    fixed_delay: 1
+
+messages:
+    cpu_load: true
+    cpu_temp: true
+    used_space: true
+    voltage: true
+    sys_clock_speed: true
+    swap: true
+    memory: true
+    uptime: true
+    # Enable wifi_signal for unit of measuring % or wifi_signal_dbm for unit of meaning dBm
+    wifi_signal: false
+    wifi_signal_dbm: false

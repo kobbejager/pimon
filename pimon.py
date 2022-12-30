@@ -10,11 +10,62 @@ import time
 import socket
 import paho.mqtt.client as paho
 import json
-import config
+from random import randrange
+import argparse
+import yaml
 import os
 
 # get device host name - used in mqtt topic
 hostname = socket.gethostname()
+
+parser = argparse.ArgumentParser(description="Pimon: Raspberry Pi MQTT monitor")
+parser.add_argument(
+    "-c",
+    "--config",
+    default="config.yaml",
+    help="Configuration yaml file, defaults to `config.yaml`",
+    dest="config_file",
+)
+args = parser.parse_args()
+
+
+def load_config(config_file):
+    """Load the configuration from config yaml file and use it to override the defaults."""
+    with open(config_file, "r") as f:
+        config_override = yaml.safe_load(f)
+
+    default_config = {
+        "mqtt": {
+            "broker": "127.0.0.1",
+            "port": 1883,
+            "username": None,
+            "password": None,
+            "topic_prefix": "rpi-MQTT-monitor"
+        },
+        "group_messages": False,
+        "sleep_time": 0.5,
+        "discovery_messages": True,
+        "delay": {
+            "random_delay": True,
+            "fixed_delay": 1
+        },
+        "messages": {
+            "cpu_load": True,
+            "cpu_temp": True,
+            "used_space": True,
+            "voltage": True,
+            "sys_clock_speed": True,
+            "swap": True,
+            "memory": True,
+            "uptime": True,
+            "wifi_signal": False,
+            "wifi_signal_dbm": False,
+        }
+    }
+
+    config = {**default_config, **config_override}
+    return config
+
 
 def check_wifi_signal():
     try:
@@ -145,7 +196,7 @@ def config_json(what_config):
 	}
     }
 
-    data["state_topic"] = config.mqtt_topic_prefix + "/" + hostname + "/" + what_config
+    data["state_topic"] = config["mqtt"]["topic_prefix"] + "/" + hostname + "/" + what_config
     data["unique_id"] = hostname + "_" + what_config
     if what_config == "cpuload":
         data["icon"] = "mdi:speedometer"
@@ -197,81 +248,81 @@ def publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_clock_s
                     uptime_days=0, wifi_signal=0, wifi_signal_dbm=0):
     # connect to mqtt server
     client = paho.Client()
-    client.username_pw_set(config.mqtt_user, config.mqtt_password)
-    client.connect(config.mqtt_host, int(config.mqtt_port))
+    client.username_pw_set(config["mqtt"]["username"], config["mqtt"]["password"])
+    client.connect(config["mqtt"]["broker"], int(config["mqtt"]["port"]))
 
     # publish monitored values to MQTT
-    if config.cpu_load:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_cpuload/config",
+    if config["messages"]["cpu_load"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_cpuload/config",
                            config_json('cpuload'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/cpuload", cpu_load, qos=1)
-        time.sleep(config.sleep_time)
-    if config.cpu_temp:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_cputemp/config",
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/cpuload", cpu_load, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["cpu_temp"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_cputemp/config",
                            config_json('cputemp'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/cputemp", cpu_temp, qos=1)
-        time.sleep(config.sleep_time)
-    if config.used_space:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_diskusage/config",
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/cputemp", cpu_temp, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["used_space"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_diskusage/config",
                            config_json('diskusage'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/diskusage", used_space, qos=1)
-        time.sleep(config.sleep_time)
-    if config.voltage:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_voltage/config",
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/diskusage", used_space, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["voltage"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_voltage/config",
                            config_json('voltage'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/voltage", voltage, qos=1)
-        time.sleep(config.sleep_time)
-    if config.swap:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_swap/config",
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/voltage", voltage, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["swap"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_swap/config",
                            config_json('swap'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/swap", swap, qos=1)
-        time.sleep(config.sleep_time)
-    if config.memory:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_memory/config",
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/swap", swap, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["memory"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_memory/config",
                            config_json('memory'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/memory", memory, qos=1)
-        time.sleep(config.sleep_time)
-    if config.sys_clock_speed:
-        if config.discovery_messages:
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/memory", memory, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["sys_clock_speed"]:
+        if config["discovery_messages"]:
             client.publish(
-                "homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_sys_clock_speed/config",
+                "homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_sys_clock_speed/config",
                 config_json('sys_clock_speed'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/sys_clock_speed", sys_clock_speed, qos=1)
-        time.sleep(config.sleep_time)
-    if config.uptime:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_uptime_days/config",
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/sys_clock_speed", sys_clock_speed, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["uptime"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_uptime_days/config",
                            config_json('uptime_days'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/uptime_days", uptime_days, qos=1)
-        time.sleep(config.sleep_time)
-    if config.wifi_signal:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_wifi_signal/config",
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/uptime_days", uptime_days, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["wifi_signal"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_wifi_signal/config",
                            config_json('wifi_signal'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/wifi_signal", wifi_signal, qos=1)
-        time.sleep(config.sleep_time)
-    if config.wifi_signal_dbm:
-        if config.discovery_messages:
-            client.publish("homeassistant/sensor/" + config.mqtt_topic_prefix + "/" + hostname + "_wifi_signal_dbm/config",
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/wifi_signal", wifi_signal, qos=1)
+        time.sleep(config["sleep_time"])
+    if config["messages"]["wifi_signal_dbm"]:
+        if config["discovery_messages"]:
+            client.publish("homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_wifi_signal_dbm/config",
                            config_json('wifi_signal_dbm'), qos=0)
-            time.sleep(config.sleep_time)
-        client.publish(config.mqtt_topic_prefix + "/" + hostname + "/wifi_signal_dbm", wifi_signal_dbm, qos=1)
-        time.sleep(config.sleep_time)
+            time.sleep(config["sleep_time"])
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/wifi_signal_dbm", wifi_signal_dbm, qos=1)
+        time.sleep(config["sleep_time"])
 
     # disconnect from mqtt server
     client.disconnect()
@@ -286,46 +337,53 @@ def bulk_publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_cl
 
     # connect to mqtt server
     client = paho.Client()
-    client.username_pw_set(config.mqtt_user, config.mqtt_password)
-    client.connect(config.mqtt_host, int(config.mqtt_port))
+    client.username_pw_set(config["mqtt"]["username"], config["mqtt"]["password"])
+    client.connect(config["mqtt"]["broker"], int(config["mqtt"]["port"]))
 
     # publish monitored values to MQTT
-    client.publish(config.mqtt_topic_prefix + "/" + hostname, values, qos=1)
+    client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname, values, qos=1)
 
     # disconnect from mqtt server
     client.disconnect()
 
+
+config = load_config(args.config_file)
 
 if __name__ == '__main__':
     # set all monitored values to False in case they are turned off in the config
     cpu_load = cpu_temp = used_space = voltage = sys_clock_speed = swap = memory = uptime_days = wifi_signal = wifi_signal_dbm =  False
 
     # delay the execution of the script
-    time.sleep(config.random_delay)
+    if config["delay"]["random_delay"]:
+        delay = randrange(1)
+    else:
+        delay = config["delay"]["fixed_delay"]
+    time.sleep(delay)
 
     # collect the monitored values
-    if config.cpu_load:
+    if config["messages"]["cpu_load"]:
         cpu_load = check_cpu_load()
-    if config.cpu_temp:
+    if config["messages"]["cpu_temp"]:
         cpu_temp = check_cpu_temp()
-    if config.used_space:
+    if config["messages"]["used_space"]:
         used_space = check_used_space('/')
-    if config.voltage:
+    if config["messages"]["voltage"]:
         voltage = check_voltage()
-    if config.sys_clock_speed:
+    if config["messages"]["sys_clock_speed"]:
         sys_clock_speed = check_sys_clock_speed()
-    if config.swap:
+    if config["messages"]["swap"]:
         swap = check_swap()
-    if config.memory:
+    if config["messages"]["memory"]:
         memory = check_memory()
-    if config.uptime:
+    if config["messages"]["uptime"]:
         uptime_days = check_uptime()
-    if config.wifi_signal:
+    if config["messages"]["wifi_signal"]:
         wifi_signal = check_wifi_signal()
-    if config.wifi_signal_dbm:
+    if config["messages"]["wifi_signal_dbm"]:
         wifi_signal_dbm = check_wifi_signal_dbm()
+
     # Publish messages to MQTT
-    if config.group_messages:
+    if config["group_messages"]:
         bulk_publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days, wifi_signal, wifi_signal_dbm)
     else:
         publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days, wifi_signal, wifi_signal_dbm)

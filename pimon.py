@@ -56,7 +56,7 @@ def load_config(config_file):
         "messages": {
             "cpu_load": True,
             "cpu_temp": True,
-            "used_space": True,
+            "diskusage": True,
             "voltage": True,
             "sys_clock_speed": True,
             "swap": True,
@@ -92,12 +92,12 @@ def check_wifi_signal_dbm():
     return wifi_signal
 
 
-def check_used_space(path):
+def check_diskusage(path):
     st = os.statvfs(path)
     free_space = st.f_bavail * st.f_frsize
     total_space = st.f_blocks * st.f_frsize
-    used_space = int(100 - ((free_space / total_space) * 100))
-    return used_space
+    diskusage = int(100 - ((free_space / total_space) * 100))
+    return diskusage
 
 
 def check_cpu_load():
@@ -138,7 +138,7 @@ def check_cpu_temp():
     full_cmd = "cat /sys/class/thermal/thermal_zone*/temp 2> /dev/null | sed 's/\(.\)..$//' | tail -n 1"
     try:
         p = subprocess.Popen(full_cmd, shell=True, stdout=subprocess.PIPE).communicate()[0]
-        cpu_temp = p.decode("utf-8").replace('\n', ' ').replace('\r', '')
+        cpu_temp = int(p.decode("utf-8").replace('\n', ' ').replace('\r', ''))
     except Exception:
         cpu_temp = 0
     return cpu_temp
@@ -146,7 +146,7 @@ def check_cpu_temp():
 
 def check_sys_clock_speed():
     full_cmd = "awk '{printf (\"%0.0f\",$1/1000); }' </sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"
-    return subprocess.Popen(full_cmd, shell=True, stdout=subprocess.PIPE).communicate()[0]
+    return int(subprocess.Popen(full_cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
 
 
 def check_uptime():
@@ -284,7 +284,7 @@ def mqtt_on_connect(client, userdata, flags, rc):
                 retain=True,
             )
             time.sleep(config["sleep_time"])
-        if config["messages"]["used_space"]:
+        if config["messages"]["diskusage"]:
             client.publish(
                 "homeassistant/sensor/" + config["mqtt"]["topic_prefix"] + "/" + hostname + "_diskusage/config",
                 config_json('diskusage'),
@@ -375,8 +375,8 @@ def publish_individual(data):
     if config["messages"]["cpu_temp"]:
         client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/cputemp", data["cpu_temp"], qos=1)
         time.sleep(config["sleep_time"])
-    if config["messages"]["used_space"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/diskusage", data["used_space"], qos=1)
+    if config["messages"]["diskusage"]:
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/diskusage", data["diskusage"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["voltage"]:
         client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/voltage", data["voltage"], qos=1)
@@ -408,6 +408,7 @@ def publish_bulk(data):
     else:
         # compose the CSV message containing the measured values
         values = list(data.values())
+        values = [str(v) for v in values]
         values = ', '.join(values)
         client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname, values, qos=1)
 
@@ -426,8 +427,8 @@ def publish():
             data["cpu_load"] = check_cpu_load()
         if config["messages"]["cpu_temp"]:
             data["cpu_temp"] = check_cpu_temp()
-        if config["messages"]["used_space"]:
-            data["used_space"] = check_used_space('/')
+        if config["messages"]["diskusage"]:
+            data["diskusage"] = check_diskusage('/')
         if config["messages"]["voltage"]:
             data["voltage"] = check_voltage()
         if config["messages"]["sys_clock_speed"]:

@@ -368,51 +368,41 @@ def on_exit(signum, frame):
     sys.exit(0)
 
 
-def publish_to_mqtt(
-        cpu_load=0,
-        cpu_temp=0,
-        used_space=0,
-        voltage=0,
-        sys_clock_speed=0,
-        swap=0,
-        memory=0,
-        uptime_days=0,
-        wifi_signal=0,
-        wifi_signal_dbm=0):
+def publish_individual(data):
     # publish monitored values to MQTT
     if config["messages"]["cpu_load"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/cpuload", cpu_load, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/cpuload", data["cpu_load"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["cpu_temp"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/cputemp", cpu_temp, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/cputemp", data["cpu_temp"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["used_space"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/diskusage", used_space, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/diskusage", data["used_space"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["voltage"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/voltage", voltage, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/voltage", data["voltage"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["swap"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/swap", swap, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/swap", data["swap"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["memory"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/memory", memory, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/memory", data["memory"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["sys_clock_speed"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/sys_clock_speed", sys_clock_speed, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/sys_clock_speed", data["sys_clock_speed"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["uptime"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/uptime_days", uptime_days, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/uptime_days", data["uptime_days"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["wifi_signal"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/wifi_signal", wifi_signal, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/wifi_signal", data["wifi_signal"], qos=1)
         time.sleep(config["sleep_time"])
     if config["messages"]["wifi_signal_dbm"]:
-        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/wifi_signal_dbm", wifi_signal_dbm, qos=1)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/wifi_signal_dbm", data["wifi_signal_dbm"], qos=1)
         time.sleep(config["sleep_time"])
 
 
-def bulk_publish_to_mqtt(data):
+def publish_bulk(data):
     # compose the CSV message containing the measured values
     values = list(data.values())
     values = ', '.join(values)
@@ -461,9 +451,9 @@ def publish():
 
         # Publish messages to MQTT
         if config["group_messages"]:
-            bulk_publish_to_mqtt(data)
+            publish_bulk(data)
         else:
-            publish_to_mqtt(data)
+            publish_individual(data)
             
     except KeyError:
         print("Could not read data, skipping")

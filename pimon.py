@@ -46,14 +46,13 @@ def load_config(config_file):
             "password": None,
             "topic_prefix": "rpi-MQTT-monitor"
         },
-        "group_messages": False,
-        "publish_period": 30,
+        "bulk": {
+            "group_messages": False,
+            "format_as_json" : False
+        },
+        "loop_time": 30,
         "sleep_time": 0.5,
         "discovery_messages": True,
-        "delay": {
-            "random_delay": True,
-            "fixed_delay": 1
-        },
         "messages": {
             "cpu_load": True,
             "cpu_temp": True,
@@ -403,29 +402,24 @@ def publish_individual(data):
 
 
 def publish_bulk(data):
-    # compose the CSV message containing the measured values
-    values = list(data.values())
-    values = ', '.join(values)
-
     # publish monitored values to MQTT
-    client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname, values, qos=1)
+    if config["bulk"]["format_as_json"]:
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname, json.dumps(data), qos=1)
+    else:
+        # compose the CSV message containing the measured values
+        values = list(data.values())
+        values = ', '.join(values)
+        client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname, values, qos=1)
 
 
 config = load_config(args.config_file)
 
 def publish():
     global timer_thread
-    timer_thread = threading.Timer(config["publish_period"], publish)
+    timer_thread = threading.Timer(config["loop_time"], publish)
     timer_thread.start()
 
     try:
-        # delay the execution of the script
-        if config["delay"]["random_delay"]:
-            delay = randrange(1)
-        else:
-            delay = config["delay"]["fixed_delay"]
-        time.sleep(delay)
-
         # collect the monitored values
         data = {}
         if config["messages"]["cpu_load"]:

@@ -5,27 +5,22 @@ mqtt:
     port: 1883
     username: mymqttusername  # Login to broker. Delete if not required
     password: mymqttpassword  # Login to broker. Delete if not required
-    topic_prefix: rpi-MQTT-monitor
+    topic_prefix: pimon
 
 # If this is set to true the script will send just one message containing all values
-group_messages: false
+bulk:
+    group_messages: false
+    format_as_json: false
 
 # Time of a loop cycle
-publish_period: 30
+loop_time: 30
 
 # This is the time between sending the individual messages
 sleep_time: 0.5
 
-# If this is set, then the script will send MQTT discovery messages meaning a config less setup in HA.  Only works
+# If this is set, then the script will send MQTT discovery messages meaning a config less setup in HA. Only works
 # when group_messages is set to false
 discovery_messages: true
-
-# Delay in seconds before measuring the values
-# - this is used for de-synchronizing message if you run this script on many hosts.
-# - if you want a fixed or no delay, set random_delay to false and set a fixed_delay.
-delay:
-    random_delay: true
-    fixed_delay: 1
 
 messages:
     cpu_load: true

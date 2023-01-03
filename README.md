@@ -24,7 +24,7 @@ but ...
 * has no automated installation scripts (yet?)
 * Home Assistant integration is still present but untested in this fork (I don't use it)
 
-The changes are heavily influenced by the design of (PiJuice MQTT)[https://github.com/dalehumby/PiJuice-MQTT].
+The changes are heavily influenced by the design of [PiJuice MQTT](https://github.com/dalehumby/PiJuice-MQTT).
 
 ## Installation
 

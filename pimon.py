@@ -266,7 +266,7 @@ def mqtt_on_connect(client, userdata, flags, rc):
     )
 
     # Home Assistant MQTT autoconfig
-    if config["discovery_messages"] and not config["group_messages"]:
+    if config["discovery_messages"] and not config["bulk"]["group_messages"]:
         print("Publishing Home Assistant MQTT autoconfig")
         if config["messages"]["cpu_load"]:
             client.publish(
@@ -444,7 +444,7 @@ def publish():
             data["wifi_signal_dbm"] = check_wifi_signal_dbm()
 
         # Publish messages to MQTT
-        if config["group_messages"]:
+        if config["bulk"]["group_messages"]:
             publish_bulk(data)
         else:
             publish_individual(data)

@@ -10,7 +10,10 @@ mqtt:
 # If this is set to true the script will send just one message containing all values
 group_messages: false
 
-# This is the time  between sending the individual messages
+# Time of a loop cycle
+publish_period: 30
+
+# This is the time between sending the individual messages
 sleep_time: 0.5
 
 # If this is set, then the script will send MQTT discovery messages meaning a config less setup in HA.  Only works

@@ -1,0 +1,16 @@
+[Unit]
+Description=Pimon
+After=multi-user.target
+StartLimitIntervalSec=610
+StartLimitBurst=10
+
+[Service]
+WorkingDirectory=/opt/pimon
+User=pi
+Type=idle
+ExecStart=/opt/pimon/venv/bin/python /opt/pimon/pimon.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

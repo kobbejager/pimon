@@ -249,7 +249,7 @@ def config_json(what_config):
     return json.dumps(data)
 
 
-def mqtt_on_connect(client):
+def mqtt_on_connect(client, userdata, flags, rc):
     """Renew subscriptions and set Last Will message when connect to broker."""
     
     # Set up Last Will, and then set services' status to 'online'
@@ -368,8 +368,17 @@ def on_exit(signum, frame):
     sys.exit(0)
 
 
-def publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
-                    uptime_days=0, wifi_signal=0, wifi_signal_dbm=0):
+def publish_to_mqtt(
+        cpu_load=0,
+        cpu_temp=0,
+        used_space=0,
+        voltage=0,
+        sys_clock_speed=0,
+        swap=0,
+        memory=0,
+        uptime_days=0,
+        wifi_signal=0,
+        wifi_signal_dbm=0):
     # publish monitored values to MQTT
     if config["messages"]["cpu_load"]:
         client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname + "/cpuload", cpu_load, qos=1)
@@ -403,13 +412,10 @@ def publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_clock_s
         time.sleep(config["sleep_time"])
 
 
-
-def bulk_publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_clock_speed=0, swap=0, memory=0,
-                         uptime_days=0, wifi_signal=0, wifi_signal_dbm=0):
+def bulk_publish_to_mqtt(data):
     # compose the CSV message containing the measured values
-
-    values = cpu_load, float(cpu_temp), used_space, float(voltage), int(sys_clock_speed), swap, memory, uptime_days, wifi_signal, wifi_signal_dbm
-    values = str(values)[1:-1]
+    values = list(data.values())
+    values = ', '.join(values)
 
     # publish monitored values to MQTT
     client.publish(config["mqtt"]["topic_prefix"] + "/" + hostname, values, qos=1)
@@ -417,64 +423,12 @@ def bulk_publish_to_mqtt(cpu_load=0, cpu_temp=0, used_space=0, voltage=0, sys_cl
 
 config = load_config(args.config_file)
 
-# if __name__ == '__main__':
-#     # set all monitored values to False in case they are turned off in the config
-#     cpu_load = cpu_temp = used_space = voltage = sys_clock_speed = swap = memory = uptime_days = wifi_signal = wifi_signal_dbm =  False
-
-#     # delay the execution of the script
-#     if config["delay"]["random_delay"]:
-#         delay = randrange(1)
-#     else:
-#         delay = config["delay"]["fixed_delay"]
-#     time.sleep(delay)
-
-#     # collect the monitored values
-#     if config["messages"]["cpu_load"]:
-#         cpu_load = check_cpu_load()
-#     if config["messages"]["cpu_temp"]:
-#         cpu_temp = check_cpu_temp()
-#     if config["messages"]["used_space"]:
-#         used_space = check_used_space('/')
-#     if config["messages"]["voltage"]:
-#         voltage = check_voltage()
-#     if config["messages"]["sys_clock_speed"]:
-#         sys_clock_speed = check_sys_clock_speed()
-#     if config["messages"]["swap"]:
-#         swap = check_swap()
-#     if config["messages"]["memory"]:
-#         memory = check_memory()
-#     if config["messages"]["uptime"]:
-#         uptime_days = check_uptime()
-#     if config["messages"]["wifi_signal"]:
-#         wifi_signal = check_wifi_signal()
-#     if config["messages"]["wifi_signal_dbm"]:
-#         wifi_signal_dbm = check_wifi_signal_dbm()
-
-#     # Publish messages to MQTT
-#     if config["group_messages"]:
-#         bulk_publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days, wifi_signal, wifi_signal_dbm)
-#     else:
-#         publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days, wifi_signal, wifi_signal_dbm)
-
-
 def publish():
     global timer_thread
     timer_thread = threading.Timer(config["publish_period"], publish)
     timer_thread.start()
 
     try:
-
-        # if "publish_online_status" in config and config["publish_online_status"]:
-        #     client.publish(
-        #         f"{SERVICE_NAME}/{config['hostname']}/service",
-        #         payload="online",
-        #         qos=1,
-        #         retain=True,
-        #     )
-
-        # set all monitored values to False in case they are turned off in the config
-        cpu_load = cpu_temp = used_space = voltage = sys_clock_speed = swap = memory = uptime_days = wifi_signal = wifi_signal_dbm =  False
-
         # delay the execution of the script
         if config["delay"]["random_delay"]:
             delay = randrange(1)
@@ -483,32 +437,33 @@ def publish():
         time.sleep(delay)
 
         # collect the monitored values
+        data = {}
         if config["messages"]["cpu_load"]:
-            cpu_load = check_cpu_load()
+            data["cpu_load"] = check_cpu_load()
         if config["messages"]["cpu_temp"]:
-            cpu_temp = check_cpu_temp()
+            data["cpu_temp"] = check_cpu_temp()
         if config["messages"]["used_space"]:
-            used_space = check_used_space('/')
+            data["used_space"] = check_used_space('/')
         if config["messages"]["voltage"]:
-            voltage = check_voltage()
+            data["voltage"] = check_voltage()
         if config["messages"]["sys_clock_speed"]:
-            sys_clock_speed = check_sys_clock_speed()
+            data["sys_clock_speed"] = check_sys_clock_speed()
         if config["messages"]["swap"]:
-            swap = check_swap()
+            data["swap"] = check_swap()
         if config["messages"]["memory"]:
-            memory = check_memory()
+            data["memory"] = check_memory()
         if config["messages"]["uptime"]:
-            uptime_days = check_uptime()
+            data["uptime_days"] = check_uptime()
         if config["messages"]["wifi_signal"]:
-            wifi_signal = check_wifi_signal()
+            data["wifi_signal"] = check_wifi_signal()
         if config["messages"]["wifi_signal_dbm"]:
-            wifi_signal_dbm = check_wifi_signal_dbm()
+            data["wifi_signal_dbm"] = check_wifi_signal_dbm()
 
         # Publish messages to MQTT
         if config["group_messages"]:
-            bulk_publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days, wifi_signal, wifi_signal_dbm)
+            bulk_publish_to_mqtt(data)
         else:
-            publish_to_mqtt(cpu_load, cpu_temp, used_space, voltage, sys_clock_speed, swap, memory, uptime_days, wifi_signal, wifi_signal_dbm)
+            publish_to_mqtt(data)
             
     except KeyError:
         print("Could not read data, skipping")
@@ -521,8 +476,8 @@ if __name__ == "__main__":
     client.connect(config["mqtt"]["broker"], config["mqtt"]["port"], 60)
     print("Pimon connected to MQTT broker")
 
-    # signal.signal(signal.SIGINT, on_exit)
-    # signal.signal(signal.SIGTERM, on_exit)
+    signal.signal(signal.SIGINT, on_exit)
+    signal.signal(signal.SIGTERM, on_exit)
 
     publish()
     client.loop_forever()

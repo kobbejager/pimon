@@ -15,6 +15,7 @@ import json
 from random import randrange
 import argparse
 import os
+from datetime import datetime, timezone
 
 import yaml
 import paho.mqtt.client as mqtt
@@ -64,6 +65,7 @@ def load_config(config_file):
             "uptime": True,
             "wifi_signal": False,
             "wifi_signal_dbm": False,
+            "timestamp": False
         }
     }
 
@@ -164,6 +166,10 @@ def check_model_name():
    return model_name
 
 
+def get_timestamp():
+    return datetime.now(timezone.utc).astimezone().isoformat('T', 'seconds')
+
+
 def get_os():
     full_cmd = 'cat /etc/os-release | grep -i pretty_name'
     pretty_name = subprocess.Popen(full_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode("utf-8")
@@ -242,6 +248,9 @@ def config_json(what_config):
         data["icon"] = "mdi:wifi"
         data["name"] = hostname + " Wifi Signal"
         data["unit_of_measurement"] = "dBm"
+    elif what_config == "timestamp":
+        data["icon"] = "mdi:calendar"
+        data["name"] = hostname + " Timestamp"
     else:
         return ""
     # Return our built discovery config
@@ -354,6 +363,8 @@ def publish():
             data["wifi_signal"] = check_wifi_signal()
         if config["messages"]["wifi_signal_dbm"]:
             data["wifi_signal_dbm"] = check_wifi_signal_dbm()
+        if config["messages"]["timestamp"]:
+            data["timestamp"] = get_timestamp()
 
         # Publish messages to MQTT
         if config["bulk"]["group_messages"]:

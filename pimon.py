@@ -366,7 +366,7 @@ def publish():
                 data["diskusage_"+k] = check_diskusage(v)
         if len(config["messages"]["smart_temp"]) > 0:
             for k, v in config["messages"]["smart_temp"].items():
-                data["hdd_temp_"+5] = check_smart_temp(v)
+                data["hdd_temp_"+k] = check_smart_temp(v)
         if config["messages"]["voltage"]:
             data["voltage"] = check_voltage()
         if config["messages"]["sys_clock_speed"]:

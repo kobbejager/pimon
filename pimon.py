@@ -58,8 +58,8 @@ def load_config(config_file):
             "cpu_load": True,
             "cpu_temp": True,
             "diskusage": True,
-            "other_diskusage": [],
-            "smart_temp": [],
+            "other_diskusage": {},
+            "smart_temp": {},
             "voltage": True,
             "sys_clock_speed": True,
             "swap": True,
@@ -105,7 +105,7 @@ def check_diskusage(path):
 
 
 def check_smart_temp(dev):
-    full_cmd = "smartctl -A " + dev + " | grep -i temperature | awk '{print $10}'"
+    full_cmd = "smartctl -d sat -A " + dev + " | grep -i Temperature_Celsius | awk '{print $10}'"
     try:
         p = subprocess.Popen(full_cmd, shell=True, stdout=subprocess.PIPE).communicate()[0]
         smart_temp = int(p.decode("utf-8").replace('\n', ' ').replace('\r', ''))
@@ -362,11 +362,11 @@ def publish():
         if config["messages"]["diskusage"]:
             data["diskusage"] = check_diskusage('/')
         if len(config["messages"]["other_diskusage"]) > 0:
-            for item in config["messages"]["other_diskusage"]:
-                data[item] = check_diskusage(item)
+            for k, v in config["messages"]["other_diskusage"].items():
+                data["diskusage_"+k] = check_diskusage(v)
         if len(config["messages"]["smart_temp"]) > 0:
-            for item in config["messages"]["smart_temp"]:
-                data[item] = check_smart_temp(item)
+            for k, v in config["messages"]["smart_temp"].items():
+                data["hdd_temp_"+5] = check_smart_temp(v)
         if config["messages"]["voltage"]:
             data["voltage"] = check_voltage()
         if config["messages"]["sys_clock_speed"]:

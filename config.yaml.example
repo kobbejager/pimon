@@ -28,6 +28,8 @@ messages:
     cpu_load: true
     cpu_temp: true
     diskusage: true
+    other_diskusage: {}
+    smart_temp: {}
     voltage: true
     sys_clock_speed: true
     swap: true

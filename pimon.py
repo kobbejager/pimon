@@ -362,9 +362,11 @@ def publish():
         if config["messages"]["diskusage"]:
             data["diskusage"] = check_diskusage('/')
         if len(config["messages"]["other_diskusage"]) > 0:
+            print("other_diskusage")
             for k, v in config["messages"]["other_diskusage"].items():
                 data["diskusage_"+k] = check_diskusage(v)
         if len(config["messages"]["smart_temp"]) > 0:
+            print("smart_temp")
             for k, v in config["messages"]["smart_temp"].items():
                 data["hdd_temp_"+k] = check_smart_temp(v)
         if config["messages"]["voltage"]:
@@ -391,6 +393,7 @@ def publish():
             publish_individual(data)
             
     except KeyError:
+        print(data)
         print("Could not read data, skipping")
 
 
